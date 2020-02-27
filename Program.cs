@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Palindromes
@@ -9,79 +10,124 @@ namespace Palindromes
         // no test, no performance 
         static void Main(string[] args)
         {
-            List<DateTime> palindroms = new List<DateTime>();
-            DateTime start = new DateTime(1000, 01, 01);
-            DateTime stop = new DateTime(9999, 12, 31);
-            while (start < stop)
-            {
-                if (IsPalindrom(start))
-                    palindroms.Add(start);
-                start = start.AddDays(1);
-            }
+            Stopwatch watch = new Stopwatch();
 
-            List<KeyValuePair<DateTime, DateTime>> anagrams = new List<KeyValuePair<DateTime, DateTime>>();
-            for(int i = 0; i < palindroms.Count / 2; ++i)
-            {
-                for (int j = i + 1; j < palindroms.Count; ++j)
-                {
-                    if (AreAnagram(ToString(palindroms[i]), ToString(palindroms[j])))
-                        anagrams.Add(new KeyValuePair<DateTime, DateTime>(palindroms[i], palindroms[j]));
-                }
-            }
+            watch.Start();
+            List<DateTime> palindromes = FindPalindromes();
+            watch.Stop();
+            Console.WriteLine($"Found palindromes in {watch.ElapsedMilliseconds} milliseconds");
 
-            Dictionary<KeyValuePair<DateTime, DateTime>, int> result = new Dictionary<KeyValuePair<DateTime, DateTime>, int>();
-            foreach(var kvp in anagrams)
-            {
-                var diff = kvp.Value - kvp.Key;
-                int days = (int) diff.TotalDays;
-                if (IsPalindrom(days.ToString()))
-                    result.Add(kvp, days);
-            }
+            watch.Reset();
+            watch.Start();
+            List<KeyValuePair<DateTime, DateTime>> anagrams = FindAnagrams(palindromes);
+            watch.Stop();
+            Console.WriteLine($"Found anagrams in {watch.ElapsedMilliseconds} milliseconds");
 
-            foreach(var kvp in result)
+            watch.Reset();
+            watch.Start();
+            Dictionary<KeyValuePair<DateTime, DateTime>, int> result = FindResult(anagrams);
+            watch.Stop();
+            Console.WriteLine($"Found result in {watch.ElapsedMilliseconds} milliseconds");
+
+            foreach (var kvp in result)
             {
                 Console.WriteLine($"{ToString(kvp.Key.Key)} - {ToString(kvp.Key.Value)} :: {kvp.Value}");
             }
         }
 
-        static bool IsPalindrom(DateTime t)
+        private static Dictionary<KeyValuePair<DateTime, DateTime>, int> FindResult(List<KeyValuePair<DateTime, DateTime>> anagrams)
         {
-            return IsPalindrom(ToString(t));
+            Dictionary<KeyValuePair<DateTime, DateTime>, int> result = new Dictionary<KeyValuePair<DateTime, DateTime>, int>();
+            foreach (var kvp in anagrams)
+            {
+                var diff = kvp.Value - kvp.Key;
+                int days = (int)diff.TotalDays;
+                if (IsPalindrome(days.ToString()))
+                    result.Add(kvp, days);
+            }
+
+            return result;
         }
 
-        static bool AreAnagram(string a, string b)
+        private static List<KeyValuePair<DateTime, DateTime>> FindAnagrams(List<DateTime> palindromes)
         {
-            if (a.Length != b.Length)
+            List<KeyValuePair<DateTime, DateTime>> anagrams = new List<KeyValuePair<DateTime, DateTime>>();
+            for (int i = 0; i < palindromes.Count / 2; ++i)
+            {
+                for (int j = i + 1; j < palindromes.Count; ++j)
+                {
+                    if (AreAnagram(palindromes[i], palindromes[j]))
+                        anagrams.Add(new KeyValuePair<DateTime, DateTime>(palindromes[i], palindromes[j]));
+                }
+            }
+
+            return anagrams;
+        }
+
+        private static List<DateTime> FindPalindromes()
+        {
+            List<DateTime> palindroms = new List<DateTime>();
+            DateTime start = new DateTime(1000, 01, 01);
+            DateTime stop = new DateTime(9999, 12, 31);
+            while (start < stop)
+            {
+                if (IsPalindrome(start))
+                    palindroms.Add(start);
+                start = start.AddDays(1);
+            }
+
+            return palindroms;
+        }
+
+        static bool IsPalindrome(DateTime t)
+        {
+            int day = t.Day;
+            int month = t.Month;
+            int year = t.Year;
+            int d0 = day < 10 ? 0 : day / 10;
+            if (d0 != year % 10)
                 return false;
-            if (a.Length == 0) // we don't want those
+            int d1 = day % 10;
+            if (d1 != (year / 10) % 10)
+                return false;
+            int m0 = month < 10 ? 0 : month / 10;
+            if (m0 != (year / 100) % 10)
+                return false;
+            int m1 = month % 10;
+            if (m1 != year / 1000)
                 return false;
 
-            Dictionary<char, int> ca = ToHistogram(a);
-            Dictionary<char, int> cb = ToHistogram(b);
-            if (ca.Count != cb.Count)
-                return false;
-            foreach(var kvp in ca)
+            return true;
+        }
+
+        static bool AreAnagram(DateTime a, DateTime b)
+        {
+            int[] hista = ToHistogram(a);
+            int[] histb = ToHistogram(b);
+
+            for(int i = 0; i < 10; ++i)
             {
-                if (!cb.ContainsKey(kvp.Key))
-                    return false;
-                if (kvp.Value != cb[kvp.Key])
+                if (hista[i] != histb[i])
                     return false;
             }
 
             return true;
         }
 
-
-        static Dictionary<char, int> ToHistogram(string s)
+        static int[] ToHistogram(DateTime d)
         {
-            Dictionary<char, int> result = new Dictionary<char, int>();
-            foreach(char c in s)
-            {
-                if (!result.ContainsKey(c))
-                    result.Add(c, 0);
-                result[c] += 1;
-            }
-
+            int[] result = new int[10];
+            int days = d.Day;
+            result[days < 10 ? 0 : days / 10] += 1;
+            result[days % 10] += 1;
+            int month = d.Month;
+            result[month < 10 ? 0 : month / 10] += 1;
+            result[month % 10] += 1;
+            int year = d.Year;
+            result[year / 1000] += 1;
+            result[(year / 100) % 10] += 1;
+            result[(year / 10) % 10] += 1;
+            result[year % 10] += 1;
             return result;
         }
 
@@ -92,7 +138,7 @@ namespace Palindromes
             return stringBuilder.ToString();
         }
 
-        static bool IsPalindrom(string s)
+        static bool IsPalindrome(string s)
         {
             for(int i = 0; i <= s.Length / 2; ++i)
             {
