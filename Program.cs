@@ -52,7 +52,7 @@ namespace Palindromes
         private static List<KeyValuePair<DateTime, DateTime>> FindAnagrams(List<DateTime> palindromes)
         {
             List<KeyValuePair<DateTime, DateTime>> anagrams = new List<KeyValuePair<DateTime, DateTime>>();
-            for (int i = 0; i < palindromes.Count / 2; ++i)
+            for (int i = 0; i < palindromes.Count; ++i)
             {
                 for (int j = i + 1; j < palindromes.Count; ++j)
                 {
@@ -81,9 +81,8 @@ namespace Palindromes
 
         static bool IsPalindrome(DateTime t)
         {
-            int day = t.Day;
-            int month = t.Month;
-            int year = t.Year;
+            int day, month, year;
+            t.GetDatePart(out year, out month, out day);
             int d0 = day < 10 ? 0 : day / 10;
             if (d0 != year % 10)
                 return false;
@@ -105,7 +104,7 @@ namespace Palindromes
             int[] hista = ToHistogram(a);
             int[] histb = ToHistogram(b);
 
-            for(int i = 0; i < 10; ++i)
+            for (int i = 0; i < 10; ++i)
             {
                 if (hista[i] != histb[i])
                     return false;
@@ -116,14 +115,13 @@ namespace Palindromes
 
         static int[] ToHistogram(DateTime d)
         {
+            int day, month, year;
+            d.GetDatePart(out year, out month, out day);
             int[] result = new int[10];
-            int days = d.Day;
-            result[days < 10 ? 0 : days / 10] += 1;
-            result[days % 10] += 1;
-            int month = d.Month;
+            result[day < 10 ? 0 : day / 10] += 1;
+            result[day % 10] += 1;
             result[month < 10 ? 0 : month / 10] += 1;
             result[month % 10] += 1;
-            int year = d.Year;
             result[year / 1000] += 1;
             result[(year / 100) % 10] += 1;
             result[(year / 10) % 10] += 1;
@@ -140,7 +138,7 @@ namespace Palindromes
 
         static bool IsPalindrome(string s)
         {
-            for(int i = 0; i <= s.Length / 2; ++i)
+            for (int i = 0; i <= s.Length / 2; ++i)
             {
                 if (s[i] != s[s.Length - i - 1])
                     return false;
